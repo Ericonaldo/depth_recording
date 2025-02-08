@@ -4,11 +4,7 @@ import time
 from pathlib import Path
 from datetime import datetime
 from multiprocessing import Process
-
-try:
-    from .utils import save_data
-except:
-    from utils import save_data
+import cv2
 
 serial_number_dict = {
     "f0221682": "l515",
@@ -33,6 +29,10 @@ color_resolution_dict = {
     "d435": (1920, 1080),
     "d455": (1280, 800),
 }
+
+def save_data(depth_image, color_image, camera_dir, frame_count):
+    cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth_image)
+    cv2.imwrite(str(camera_dir / f"color_{frame_count}.png"), color_image)
 
 def get_depth_filter():
     # filter stuff
@@ -123,7 +123,7 @@ class RealSenseRecorder:
 
     def record_frames(self):
         start_time = time.time()
-        print(f"CAM {self.serial_number}: Starting recording...")
+        print(f"CAM {self.serial_number} {self.camera_name}: Starting recording...")
 
         while True:
             try:
