@@ -6,21 +6,24 @@ from datetime import datetime
 from multiprocessing import Process
 import cv2
 
-ZED_FPS = 60
-camera_kwargs = {
-    # "VIDEO_ID": VIDEO_ID,
-    "camera_scale": 1,
-    "fps": 30,
-}
+ZED_FPS = 30
+ZED_MODE = sl.DEPTH_MODE.PERFORMANCE
+# ZED_MODE = sl.DEPTH_MODE.ULTRA 
+# ZED_MODE = sl.DEPTH_MODE.NEURAL
 
-def save_data(depth, color_image, pcd, camera_dir, frame_count):
-    # np.save(str(camera_dir / f"depth_{frame_count}.npy"), depth) # 32-bit float array
-    cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), (depth*1000).astype()) # 16-bit uint array
-    cv2.imwrite(str(camera_dir / f"color_{frame_count}.png"), color_image)
+def save_data(image, image_R, depth, normal_map, pcd, camera_dir, frame_count):
+    np.save(str(camera_dir / f"raw_depth_{frame_count}.npy"), depth) # 32-bit float array
+    cv2.imwrite(str(camera_dir / f"image_{frame_count}.png"), image)
+    cv2.imwrite(str(camera_dir / f"image_R_{frame_count}.png"), image_R)
+    depth_img = depth * 1000
+    depth_img = np.nan_to_num(depth_img, 0)
+    depth_img[depth_img > 65535] = 65535
+    depth_img[depth_img < 1e-5] = 0
+    cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth_img.astype(np.uint16)) # 16-bit uint array
+    np.save(str(camera_dir / f"normal_{frame_count}.npy"), normal_map)
     np.save(str(camera_dir / f"pcd_{frame_count}.npy"), pcd) # 32-bit float array
 
-def init_zed(fps=60, svo_file=None, 
-             async_mode=False, svo_real_time=False):
+def init_zed(svo_file=None, async_mode=False, svo_real_time=False):
     zed = sl.Camera()
     # NOTE: see https://www.stereolabs.com/docs/api/python/classpyzed_1_1sl_1_1InitParameters.html
     init_params = sl.InitParameters(svo_real_time_mode=svo_real_time and (svo_file is not None),
@@ -30,15 +33,16 @@ def init_zed(fps=60, svo_file=None,
 
     init_params.camera_resolution = sl.RESOLUTION.HD720  
     init_params.coordinate_units = sl.UNIT.METER
-    # init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
+
+    init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
     # init_params.depth_mode = sl.DEPTH_MODE.ULTRA
-    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
+    # init_params.depth_mode = sl.DEPTH_MODE.NEURAL
+
     # init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Z_UP_X_FWD
 
-    init_params.camera_fps = fps  # Set fps at 60
+    init_params.camera_fps = ZED_FPS  # Set fps at 60
     # init_params.async_image = async_mode
-    # init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
 
     # NOTE: see https://www.stereolabs.com/docs/api/python/classpyzed_1_1sl_1_1RuntimeParameters.html
     runtime_params = sl.RuntimeParameters()
@@ -63,8 +67,8 @@ class ZedRecorder:
         output_path.mkdir(exist_ok=True)
         
         # Create timestamp-based directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        session_dir = output_path / timestamp
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        session_dir = output_path / self.timestamp
 
         # Create camera directory
         self.camera_dir = session_dir / f"camera_{self.camera_name}"
@@ -97,7 +101,7 @@ class ZedRecorder:
         start_time = time.time()
         print(f"CAM {self.camera_name}: Starting recording...")
 
-        svo_filename = record_path + "zed" + ".svo"
+        svo_filename = record_path + f"/zed_{self.timestamp}" + ".svo"
         recording_param = sl.RecordingParameters(
             svo_filename, sl.SVO_COMPRESSION_MODE.H264
         )
@@ -108,8 +112,6 @@ class ZedRecorder:
             exit(1)
 
         print("SVO is Recording, use Ctrl-C to stop.") # Start recording SVO, stop with Ctrl-C command
-        frames_recorded = 0
-
         while True:
             if self.zed.grab(self.runtime_param) == sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
                 # Retrieve left image
@@ -122,6 +124,8 @@ class ZedRecorder:
                 self.zed.retrieve_measure(self.ptcloud, sl.MEASURE.XYZ, )
                 self.zed.retrieve_measure(self.normal_map, sl.MEASURE.NORMALS)
 
+                image_np = np.array(self.image.get_data())
+                image_R_np = np.array(self.image_R.get_data())
                 ptcloud_np = np.array(self.ptcloud.get_data())
                 depth_np = np.array(self.depth.get_data())
                 normal_map_np = np.array(self.normal_map.get_data())
@@ -130,7 +134,7 @@ class ZedRecorder:
                 # Create a process to save data asynchronously
                 save_process = Process(
                     target=save_data,
-                    args=(depth_np.copy(), normal_map_np.copy(), ptcloud_np.copy(), self.camera_dir, self.frame_count)
+                    args=(image_np.copy(), image_R_np.copy(), depth_np.copy(), normal_map_np.copy(), ptcloud_np.copy(), self.camera_dir, self.frame_count)
                 )
                 save_process.start()
 
@@ -158,4 +162,6 @@ class ZedRecorder:
 if __name__ == "__main__":
     recorder = ZedRecorder()
     recorder.initialize_camera()
-    recorder.record_frames()
+    svo_dir = Path('./tmp/')
+    svo_dir.mkdir(exist_ok=True)
+    recorder.record_frames(str(svo_dir))
