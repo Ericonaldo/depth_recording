@@ -6,10 +6,14 @@ from datetime import datetime
 from multiprocessing import Process
 import cv2
 
+mode_dict = {
+    "PERFORMANCE": sl.DEPTH_MODE.PERFORMANCE,
+    "QUALITY": sl.DEPTH_MODE.QUALITY,
+    "ULTRA": sl.DEPTH_MODE.ULTRA,
+    "NEURAL": sl.DEPTH_MODE.NEURAL
+}
+
 ZED_FPS = 30
-ZED_MODE = sl.DEPTH_MODE.PERFORMANCE
-# ZED_MODE = sl.DEPTH_MODE.ULTRA 
-# ZED_MODE = sl.DEPTH_MODE.NEURAL
 
 def save_data(image, image_R, depth, normal_map, pcd, camera_dir, frame_count):
     np.save(str(camera_dir / f"raw_depth_{frame_count}.npy"), depth) # 32-bit float array
@@ -23,7 +27,7 @@ def save_data(image, image_R, depth, normal_map, pcd, camera_dir, frame_count):
     np.save(str(camera_dir / f"normal_{frame_count}.npy"), normal_map)
     np.save(str(camera_dir / f"pcd_{frame_count}.npy"), pcd) # 32-bit float array
 
-def init_zed(svo_file=None, async_mode=False, svo_real_time=False):
+def init_zed(depth_mode, svo_file=None, async_mode=False, svo_real_time=False):
     zed = sl.Camera()
     # NOTE: see https://www.stereolabs.com/docs/api/python/classpyzed_1_1sl_1_1InitParameters.html
     init_params = sl.InitParameters(svo_real_time_mode=svo_real_time and (svo_file is not None),
@@ -34,9 +38,7 @@ def init_zed(svo_file=None, async_mode=False, svo_real_time=False):
     init_params.camera_resolution = sl.RESOLUTION.HD720  
     init_params.coordinate_units = sl.UNIT.METER
 
-    init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
-    # init_params.depth_mode = sl.DEPTH_MODE.ULTRA
-    # init_params.depth_mode = sl.DEPTH_MODE.NEURAL
+    init_params.depth_mode = mode_dict[depth_mode]
 
     # init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Z_UP_X_FWD
@@ -55,12 +57,13 @@ def init_zed(svo_file=None, async_mode=False, svo_real_time=False):
     return zed, runtime_params
 
 class ZedRecorder:
-    def __init__(self, svo_file=None, async_mode=True, svo_real_time=False, output_path="./recorded_data"):
+    def __init__(self, depth_mode="quality", svo_file=None, async_mode=True, svo_real_time=False, output_path="./recorded_data"):
         self.svo_file = svo_file
         self.async_mode = async_mode
         self.svo_real_time = svo_real_time
 
         self.camera_name = "Zed2i"
+        self.depth_mode = depth_mode
         
         # Create output directory
         output_path = Path(output_path)
@@ -71,15 +74,15 @@ class ZedRecorder:
         session_dir = output_path / self.timestamp
 
         # Create camera directory
-        self.camera_dir = session_dir / f"camera_{self.camera_name}"
+        self.camera_dir = session_dir / f"camera_{self.camera_name}_{self.depth_mode}"
         self.camera_dir.mkdir(parents=True, exist_ok=True)
 
     def initialize_camera(self):
         print(f"Initializing device: {self.camera_name}")
         
         # Setup pipeline and config for each camera
-        self.zed, self.runtime_param = init_zed(svo_file=self.svo_file, async_mode=self.async_mode, 
-                                                svo_real_time=self.svo_real_time)
+        self.zed, self.runtime_param = init_zed(depth_mode=str.upper(self.depth_mode), svo_file=self.svo_file,
+                                                async_mode=self.async_mode, svo_real_time=self.svo_real_time)
         
         camera_info = self.zed.get_camera_information()
         display_resolution = sl.Resolution(min(camera_info.camera_configuration.resolution.width, 1920), min(camera_info.camera_configuration.resolution.height, 1080))

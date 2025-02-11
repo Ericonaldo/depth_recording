@@ -30,6 +30,15 @@ color_resolution_dict = {
     "d455": (1280, 800),
 }
 
+# Minimum FPS for each camera
+fps_dict = {
+    "l515": 30,
+    "d405": 5,
+    "d415": 15,
+    "d435": 15,
+    "d455": 5,
+}
+
 def save_data(depth_image, color_image, camera_dir, frame_count):
     cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth_image)
     cv2.imwrite(str(camera_dir / f"color_{frame_count}.png"), color_image)
@@ -98,8 +107,8 @@ class RealSenseRecorder:
         self.config.enable_device(self.serial_number)
         
         # Enable streams
-        self.config.enable_stream(rs.stream.depth, *depth_resolution_dict[self.camera_name], rs.format.z16, 30)
-        self.config.enable_stream(rs.stream.color, *color_resolution_dict[self.camera_name], rs.format.bgr8, 30)
+        self.config.enable_stream(rs.stream.depth, *depth_resolution_dict[self.camera_name], rs.format.z16, fps_dict[self.camera_name])
+        self.config.enable_stream(rs.stream.color, *color_resolution_dict[self.camera_name], rs.format.bgr8, fps_dict[self.camera_name])
         # Create alignment primitive with color as its target stream
         self.align = rs.align(rs.stream.color)
         # self.align = rs.align(rs.stream.depth)
@@ -156,7 +165,7 @@ class RealSenseRecorder:
                 if self.frame_count % 30 == 0:
                     print(f"CAM {self.serial_number}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
 
-                time.sleep(0.1) # 10 fps
+                # time.sleep(0.1) # 10 fps
 
             except KeyboardInterrupt:
                 print(f"CAM {self.serial_number}: Stopping recording...")
@@ -178,10 +187,10 @@ if __name__ == "__main__":
     for device in devices:
         serial_number = device.get_info(rs.camera_info.serial_number)
         print(f"Device: {serial_number}")
-    device = devices[0]
-    serial_number = device.get_info(rs.camera_info.serial_number)
-    exit(0)
+    device = devices[4]
+    print("Testing device: ", device)
+    # exit(0)
     
-    recorder = RealSenseRecorder(serial_number)
+    recorder = RealSenseRecorder( device.get_info(rs.camera_info.serial_number))
     recorder.initialize_camera()
     recorder.record_frames()
