@@ -5,6 +5,16 @@ import argparse
 
 from realsense import RealSenseRecorder
 from zed import ZedRecorder
+from kinect import KinectRecorder
+
+class KinectRecordProcess(Process):
+    def __init__(self):
+        super(KinectRecordProcess, self).__init__()
+
+    def run(self):
+        recorder = KinectRecorder()
+        recorder.initialize_camera()
+        recorder.record_frames()
 
 class RealsenseRecordProcess(Process):
     def __init__(self, device):
@@ -45,6 +55,11 @@ def main(args):
         p = ZedRecordProcess()
         p.start()
         processes.append(p)
+
+    if args.kinect:
+        p = KinectRecordProcess()
+        p.start()
+        processes.append(p)
     
     # Wait for all processes to complete
     for p in processes:
@@ -55,7 +70,7 @@ def parse_args():
         parser = argparse.ArgumentParser(description='Record from RealSense and ZED cameras')
         parser.add_argument('--rs', action='store_true', help='Record from RealSense cameras')
         parser.add_argument('--zed', action='store_true', help='Record from ZED camera')
-        parser.add_argument('--azure', action='store_true', help='Record from Azure camera')
+        parser.add_argument('--kinect', action='store_true', help='Record from Azure camera')
         return parser.parse_args()
 
 

@@ -18,9 +18,8 @@ def save_data(color, depth, ir, camera_dir, frame_count):
     # Convert depth to uint16 and save
     cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth.astype(np.uint16))
     cv2.imwrite(str(camera_dir / f"ir_{frame_count}.png"), ir)
-    np.save(str(camera_dir / f"raw_depth_{frame_count}.npy"), depth)
 
-def init_azure(fps=5):
+def init_kinect(fps=5):
     # config = k4a.K4A_DEVICE_CONFIG_INIT_DISABLE_ALL
     config = Config(
         color_resolution=pyk4a.ColorResolution.RES_1080P,
@@ -33,9 +32,9 @@ def init_azure(fps=5):
     device.start()
     return device
 
-class AzureRecorder:
+class KinectRecorder:
     def __init__(self, output_path="./recorded_data"):
-        self.camera_name = "Azure"
+        self.camera_name = "Kinect"
         
         # Create output directory
         output_path = Path(output_path)
@@ -53,11 +52,11 @@ class AzureRecorder:
 
     def initialize_camera(self):
         print(f"Initializing device: {self.camera_name}")
-        self.device = init_azure()
+        self.device = init_kinect()
         
         # Wait for the first frame to ensure camera is running
         self.device.get_capture()
-        print("Azure Kinect initialized successfully")
+        print("Kinect Kinect initialized successfully")
 
     def record_frames(self):
         start_time = time.time()
@@ -74,10 +73,14 @@ class AzureRecorder:
                     depth = capture.depth
                     ir = capture.ir
 
+                    # Align depth to color
+                    transformed_depth = pyk4a.depth_image_to_color_camera(depth, self.device.calibration, thread_safe=True)
+                    # transformed_color = pyk4a.color_image_to_depth_camera(color, depth, self.device.calibration, thread_safe=True) # Not good
+
                     # Save frames asynchronously
                     save_process = Process(
                         target=save_data,
-                        args=(color.copy(), depth.copy(), ir.copy(), 
+                        args=(color.copy(), transformed_depth.copy(), ir.copy(), 
                               self.camera_dir, self.frame_count)
                     )
                     save_process.start()
@@ -100,6 +103,6 @@ class AzureRecorder:
         self.stop_record()
 
 if __name__ == "__main__":
-    recorder = AzureRecorder()
+    recorder = KinectRecorder()
     recorder.initialize_camera()
     recorder.record_frames()
