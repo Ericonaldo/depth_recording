@@ -23,7 +23,7 @@ def init_kinect(fps=5):
     # config = k4a.K4A_DEVICE_CONFIG_INIT_DISABLE_ALL
     config = Config(
         color_resolution=pyk4a.ColorResolution.RES_1080P,
-        depth_mode=pyk4a.DepthMode.NFOV_UNBINNED,
+        depth_mode=pyk4a.DepthMode.WFOV_UNBINNED,
         synchronized_images_only=True,
         camera_fps=fps_dict[fps],
     )
