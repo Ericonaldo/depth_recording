@@ -41,7 +41,7 @@ class KinectRecorder:
         output_path.mkdir(exist_ok=True)
         
         # Create timestamp-based directory
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         session_dir = output_path / self.timestamp
 
         # Create camera directory

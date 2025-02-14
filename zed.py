@@ -13,7 +13,7 @@ mode_dict = {
     "NEURAL": sl.DEPTH_MODE.NEURAL
 }
 
-ZED_FPS = 30
+ZED_FPS = 5
 
 def save_data(image, image_R, depth, normal_map, pcd, camera_dir, frame_count):
     np.save(str(camera_dir / f"raw_depth_{frame_count}.npy"), depth) # 32-bit float array
@@ -70,7 +70,7 @@ class ZedRecorder:
         output_path.mkdir(exist_ok=True)
         
         # Create timestamp-based directory
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         session_dir = output_path / self.timestamp
 
         # Create camera directory

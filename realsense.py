@@ -89,7 +89,7 @@ class RealSenseRecorder:
         output_path.mkdir(exist_ok=True)
         
         # Create timestamp-based directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         session_dir = output_path / timestamp
 
         # Create camera directory

@@ -56,7 +56,7 @@ def main(args):
         p.start()
         processes.append(p)
 
-    if args.kinect:
+    if args.kn:
         p = KinectRecordProcess()
         p.start()
         processes.append(p)
@@ -70,7 +70,7 @@ def parse_args():
         parser = argparse.ArgumentParser(description='Record from RealSense and ZED cameras')
         parser.add_argument('--rs', action='store_true', help='Record from RealSense cameras')
         parser.add_argument('--zed', action='store_true', help='Record from ZED camera')
-        parser.add_argument('--kinect', action='store_true', help='Record from Azure camera')
+        parser.add_argument('--kn', action='store_true', help='Record from Azure Kinect camera')
         return parser.parse_args()
 
 
