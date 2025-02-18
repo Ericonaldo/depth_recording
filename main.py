@@ -3,9 +3,20 @@ import pyrealsense2 as rs
 from pathlib import Path
 import argparse
 
-from realsense import RealSenseRecorder
-from zed import ZedRecorder
-from kinect import KinectRecorder
+try:
+    from realsense import RealSenseRecorder
+except ImportError:
+    pass
+
+try:
+    from zed import ZedRecorder
+except ImportError:
+    pass
+
+try:
+    from kinect import KinectRecorder
+except ImportError:
+    pass
 
 class KinectRecordProcess(Process):
     def __init__(self):
