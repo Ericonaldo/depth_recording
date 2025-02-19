@@ -1,5 +1,4 @@
 from multiprocessing import Process
-import pyrealsense2 as rs
 from pathlib import Path
 import argparse
 
@@ -50,6 +49,10 @@ class ZedRecordProcess(Process):
 
 def main(args):
     if args.rs:
+        try:
+            import pyrealsense2 as rs
+        except ImportError:
+            import pyrealsense2.pyrealsense2 as rs
         ctx = rs.context()
         devices = ctx.query_devices()
         print(f"Found {len(devices)} RealSense devices")

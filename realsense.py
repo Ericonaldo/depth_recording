@@ -1,4 +1,7 @@
-import pyrealsense2 as rs
+try:
+    import pyrealsense2 as rs
+except ImportError:
+    import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import time
 from pathlib import Path
