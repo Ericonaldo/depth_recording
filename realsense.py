@@ -190,7 +190,7 @@ if __name__ == "__main__":
     for device in devices:
         serial_number = device.get_info(rs.camera_info.serial_number)
         print(f"Device: {serial_number}")
-    device = devices[4]
+    device = devices[0]
     print("Testing device: ", device)
     # exit(0)
     

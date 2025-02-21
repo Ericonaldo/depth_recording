@@ -48,6 +48,7 @@ class ZedRecordProcess(Process):
         recorder.record_frames(str(svo_dir))
 
 def main(args):
+    processes = []
     if args.rs:
         try:
             import pyrealsense2.pyrealsense2 as rs
@@ -56,8 +57,6 @@ def main(args):
         ctx = rs.context()
         devices = ctx.query_devices()
         print(f"Found {len(devices)} RealSense devices")
-
-        processes = []
         
         for device in devices:
             serial_number = device.get_info(rs.camera_info.serial_number)
