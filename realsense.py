@@ -171,11 +171,11 @@ class RealSenseRecorder:
                 # time.sleep(0.1) # 10 fps
 
             except KeyboardInterrupt:
-                print(f"CAM {self.serial_number}: Stopping recording...")
+                print(f"CAM {self.camera_name}: Stopping recording...")
                 self.pipeline.stop()
 
             except Exception as e:
-                print(f"CAM {self.serial_number}: Error - {e}")
+                print(f"CAM {self.camera_name}: Error - {e}")
                 break
         
     def stop_recording(self):

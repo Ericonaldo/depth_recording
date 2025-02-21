@@ -89,7 +89,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    if not (args.rs or args.zed or args.azure):
+    if not (args.rs or args.zed or args.kn):
         print("Please specify at least one camera type (--rs or --zed)")
         exit(1)
     main(args)

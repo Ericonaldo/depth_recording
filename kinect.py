@@ -34,7 +34,7 @@ def init_kinect(fps=5):
 
 class KinectRecorder:
     def __init__(self, output_path="./recorded_data"):
-        self.camera_name = "Kinect"
+        self.camera_name = "kinect"
         
         # Create output directory
         output_path = Path(output_path)
