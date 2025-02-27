@@ -13,7 +13,7 @@ mode_dict = {
     "NEURAL": sl.DEPTH_MODE.NEURAL
 }
 
-ZED_FPS = 5
+ZED_FPS = 60
 
 def save_data(image, image_R, depth, normal_map, pcd, camera_dir, frame_count):
     np.save(str(camera_dir / f"raw_depth_{frame_count}.npy"), depth) # 32-bit float array
@@ -57,7 +57,8 @@ def init_zed(depth_mode, svo_file=None, async_mode=False, svo_real_time=False):
     return zed, runtime_params
 
 class ZedRecorder:
-    def __init__(self, depth_mode="quality", svo_file=None, async_mode=True, svo_real_time=False, output_path="./recorded_data"):
+    def __init__(self, vis, depth_mode="quality", svo_file=None, async_mode=True, svo_real_time=False, output_path="./recorded_data"):
+        self.vis = vis
         self.svo_file = svo_file
         self.async_mode = async_mode
         self.svo_real_time = svo_real_time
@@ -132,6 +133,10 @@ class ZedRecorder:
                 ptcloud_np = np.array(self.ptcloud.get_data())
                 depth_np = np.array(self.depth.get_data())
                 normal_map_np = np.array(self.normal_map.get_data())
+
+                if self.vis:
+                    cv2.imshow("ZED Visualization", image_np)
+                    cv2.waitKey(1)
 
                 # Save frames
                 # Create a process to save data asynchronously

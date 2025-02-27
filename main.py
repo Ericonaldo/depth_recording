@@ -1,6 +1,7 @@
 from multiprocessing import Process
 from pathlib import Path
 import argparse
+import time
 
 try:
     from realsense import RealSenseRecorder
@@ -37,11 +38,12 @@ class RealsenseRecordProcess(Process):
         recorder.record_frames()
 
 class ZedRecordProcess(Process):
-    def __init__(self):
+    def __init__(self, vis=False):
         super(ZedRecordProcess, self).__init__()
+        self.vis = vis
 
     def run(self):
-        recorder = ZedRecorder()
+        recorder = ZedRecorder(self.vis)
         recorder.initialize_camera()
         svo_dir = Path('./tmp/')
         svo_dir.mkdir(exist_ok=True)
@@ -63,11 +65,13 @@ def main(args):
             p = RealsenseRecordProcess(serial_number)
             p.start()
             processes.append(p)
+            time.sleep(1)
 
     if args.zed:
-        p = ZedRecordProcess()
+        p = ZedRecordProcess(args.vis)
         p.start()
         processes.append(p)
+        time.sleep(0.8)
 
     if args.kn:
         p = KinectRecordProcess()
@@ -84,6 +88,7 @@ def parse_args():
         parser.add_argument('--rs', action='store_true', help='Record from RealSense cameras')
         parser.add_argument('--zed', action='store_true', help='Record from ZED camera')
         parser.add_argument('--kn', action='store_true', help='Record from Azure Kinect camera')
+        parser.add_argument('--vis', action='store_true', help='Visualize, default using ZED')
         return parser.parse_args()
 
 

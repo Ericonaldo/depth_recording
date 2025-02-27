@@ -34,13 +34,22 @@ color_resolution_dict = {
 }
 
 # Minimum FPS for each camera
+# fps_dict = {
+#     "l515": 30,
+#     "d405": 5,
+#     "d415": 15,
+#     "d435": 15,
+#     "d455": 5,
+# }
 fps_dict = {
-    "l515": 30,
-    "d405": 5,
-    "d415": 15,
-    "d435": 15,
-    "d455": 5,
+    "l515": 60,
+    "d405": 60,
+    "d415": 60,
+    "d435": 60,
+    "d455": 60,
 }
+
+RECORD_FPS = 5
 
 def save_data(depth_image, color_image, camera_dir, frame_count):
     cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth_image)
@@ -140,6 +149,7 @@ class RealSenseRecorder:
         while True:
             try:
                 self.frame_count += 1
+                record_time_start = time.time()
                 # Wait for frames
                 frames = self.pipeline.wait_for_frames()
                 aligned_frames = self.align.process(frames)
@@ -168,7 +178,7 @@ class RealSenseRecorder:
                 if self.frame_count % 30 == 0:
                     print(f"CAM {self.serial_number}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
 
-                # time.sleep(0.1) # 10 fps
+                time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
 
             except KeyboardInterrupt:
                 print(f"CAM {self.camera_name}: Stopping recording...")
