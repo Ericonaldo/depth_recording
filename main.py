@@ -4,7 +4,7 @@ import argparse
 import time
 
 try:
-    from realsense import RealSenseRecorder
+    from realsense import RealSenseRecorder, serial_number_dict
 except ImportError:
     pass
 
@@ -19,21 +19,23 @@ except ImportError:
     pass
 
 class KinectRecordProcess(Process):
-    def __init__(self):
+    def __init__(self, vis=False):
         super(KinectRecordProcess, self).__init__()
+        self.vis = vis
 
     def run(self):
-        recorder = KinectRecorder()
+        recorder = KinectRecorder(self.vis)
         recorder.initialize_camera()
         recorder.record_frames()
 
 class RealsenseRecordProcess(Process):
-    def __init__(self, device):
+    def __init__(self, device, vis=False):
         super(RealsenseRecordProcess, self).__init__()
         self.device = device
+        self.vis = vis
 
     def run(self):
-        recorder = RealSenseRecorder(self.device)
+        recorder = RealSenseRecorder(self.device, self.vis)
         recorder.initialize_camera()
         recorder.record_frames()
 
@@ -62,19 +64,19 @@ def main(args):
         
         for device in devices:
             serial_number = device.get_info(rs.camera_info.serial_number)
-            p = RealsenseRecordProcess(serial_number)
+            p = RealsenseRecordProcess(serial_number, vis=str.lower(args.vis) in serial_number_dict[serial_number])
             p.start()
             processes.append(p)
             time.sleep(1)
 
     if args.zed:
-        p = ZedRecordProcess(args.vis)
+        p = ZedRecordProcess(str.lower(args.vis) in "zed")
         p.start()
         processes.append(p)
         time.sleep(0.8)
 
     if args.kn:
-        p = KinectRecordProcess()
+        p = KinectRecordProcess(str.lower(args.vis) in "kn")
         p.start()
         processes.append(p)
     
@@ -88,7 +90,7 @@ def parse_args():
         parser.add_argument('--rs', action='store_true', help='Record from RealSense cameras')
         parser.add_argument('--zed', action='store_true', help='Record from ZED camera')
         parser.add_argument('--kn', action='store_true', help='Record from Azure Kinect camera')
-        parser.add_argument('--vis', action='store_true', help='Visualize, default using ZED')
+        parser.add_argument('--vis', type=str, help='Visualization, default using 455', default="455")
         return parser.parse_args()
 
 

@@ -13,13 +13,15 @@ fps_dict = {
     30: pyk4a.FPS.FPS_30,
 }
 
+RECORD_FPS = 5
+
 def save_data(color, depth, ir, camera_dir, frame_count):
     cv2.imwrite(str(camera_dir / f"color_{frame_count}.png"), color)
     # Convert depth to uint16 and save
     cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth.astype(np.uint16))
     cv2.imwrite(str(camera_dir / f"ir_{frame_count}.png"), ir)
 
-def init_kinect(fps=5):
+def init_kinect(fps=15):
     # config = k4a.K4A_DEVICE_CONFIG_INIT_DISABLE_ALL
     config = Config(
         color_resolution=pyk4a.ColorResolution.RES_1080P,
@@ -33,8 +35,9 @@ def init_kinect(fps=5):
     return device
 
 class KinectRecorder:
-    def __init__(self, output_path="./recorded_data"):
+    def __init__(self, vis, output_path="./recorded_data"):
         self.camera_name = "kinect"
+        self.vis = vis
         
         # Create output directory
         output_path = Path(output_path)
@@ -64,6 +67,7 @@ class KinectRecorder:
 
         try:
             while True:
+                record_time_start = time.time()
                 # Get capture
                 capture = self.device.get_capture()
                 
@@ -85,11 +89,17 @@ class KinectRecorder:
                     )
                     save_process.start()
 
+                    if self.vis:
+                        cv2.imshow(f"{self.camera_name} Visualization", color)
+                        cv2.waitKey(1)
+
                     self.frame_count += 1
 
                     # Display progress
                     if self.frame_count % 30 == 0:
                         print(f"CAM {self.camera_name}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
+                    
+                    time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
 
         except KeyboardInterrupt:
             print("\nRecording stopped by user")

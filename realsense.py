@@ -42,11 +42,11 @@ color_resolution_dict = {
 #     "d455": 5,
 # }
 fps_dict = {
-    "l515": 60,
-    "d405": 60,
-    "d415": 60,
-    "d435": 60,
-    "d455": 60,
+    "l515": 30,
+    "d405": 30,
+    "d415": 15,
+    "d435": 15,
+    "d455": 5,
 }
 
 RECORD_FPS = 5
@@ -89,12 +89,14 @@ def depth_process(frame, depth_to_disparity=None, disparity_to_depth=None, decim
     return frame
 
 class RealSenseRecorder:
-    def __init__(self, serial_number, output_path="./recorded_data"):
+    def __init__(self, serial_number, vis, output_path="./recorded_data"):
         self.pipeline = None
         self.config = None
 
         self.serial_number = serial_number
         self.camera_name = serial_number_dict.get(serial_number, "unknown")
+
+        self.vis = vis
         
         # Create output directory
         output_path = Path(output_path)
@@ -168,6 +170,10 @@ class RealSenseRecorder:
                     args=(depth_image.copy(), color_image.copy(), self.camera_dir, self.frame_count)
                 )
                 save_process.start()
+
+                if self.vis:
+                    cv2.imshow(f"{self.camera_name} Visualization", color_image)
+                    cv2.waitKey(1)
 
                 # depth_frame = depth_process(depth_frame, *self.depth_filters)
                 

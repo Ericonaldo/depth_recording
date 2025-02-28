@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from multiprocessing import Process
 import cv2
+import argparse
 
 mode_dict = {
     "PERFORMANCE": sl.DEPTH_MODE.PERFORMANCE,
@@ -13,12 +14,13 @@ mode_dict = {
     "NEURAL": sl.DEPTH_MODE.NEURAL
 }
 
-ZED_FPS = 60
+ZED_FPS = 30
+RECORD_FPS = 5
 
 def save_data(image, image_R, depth, normal_map, pcd, camera_dir, frame_count):
     np.save(str(camera_dir / f"raw_depth_{frame_count}.npy"), depth) # 32-bit float array
-    cv2.imwrite(str(camera_dir / f"image_{frame_count}.png"), image)
-    cv2.imwrite(str(camera_dir / f"image_R_{frame_count}.png"), image_R)
+    cv2.imwrite(str(camera_dir / f"color_{frame_count}.png"), image)
+    cv2.imwrite(str(camera_dir / f"R_color_{frame_count}.png"), image_R)
     depth_img = depth * 1000
     depth_img = np.nan_to_num(depth_img, 0)
     depth_img[depth_img > 65535] = 65535
@@ -33,6 +35,7 @@ def init_zed(depth_mode, svo_file=None, async_mode=False, svo_real_time=False):
     init_params = sl.InitParameters(svo_real_time_mode=svo_real_time and (svo_file is not None),
                                     async_image_retrieval=async_mode)
     if svo_file is not None:
+        print("init ZED from svo file")
         init_params.set_from_svo_file(svo_file)
 
     init_params.camera_resolution = sl.RESOLUTION.HD720  
@@ -101,22 +104,27 @@ class ZedRecorder:
         
         self.frame_count = 0
 
-    def record_frames(self, record_path):
+    def replay_frames(self):
+        self.record_frames("", replay=True)
+
+    def record_frames(self, record_path, replay=False):
         start_time = time.time()
         print(f"CAM {self.camera_name}: Starting recording...")
+        
+        if not replay:
+            svo_filename = record_path + f"/zed_{self.timestamp}" + ".svo"
+            recording_param = sl.RecordingParameters(
+                svo_filename, sl.SVO_COMPRESSION_MODE.H264
+            )
+            err = self.zed.enable_recording(recording_param)
 
-        svo_filename = record_path + f"/zed_{self.timestamp}" + ".svo"
-        recording_param = sl.RecordingParameters(
-            svo_filename, sl.SVO_COMPRESSION_MODE.H264
-        )
-        err = self.zed.enable_recording(recording_param)
-
-        if err != sl.ERROR_CODE.SUCCESS:
-            print("Recording ZED : ", err)
-            exit(1)
+            if err != sl.ERROR_CODE.SUCCESS:
+                print("Recording ZED : ", err)
+                exit(1)
 
         print("SVO is Recording, use Ctrl-C to stop.") # Start recording SVO, stop with Ctrl-C command
         while True:
+            record_time_start = time.time()
             if self.zed.grab(self.runtime_param) == sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
                 # Retrieve left image
                 self.zed.retrieve_image(self.image, sl.VIEW.LEFT, sl.MEM.CPU, self.display_resolution)
@@ -135,7 +143,7 @@ class ZedRecorder:
                 normal_map_np = np.array(self.normal_map.get_data())
 
                 if self.vis:
-                    cv2.imshow("ZED Visualization", image_np)
+                    cv2.imshow(f"{self.camera_name} Visualization", image_np)
                     cv2.waitKey(1)
 
                 # Save frames
@@ -151,7 +159,9 @@ class ZedRecorder:
                 # Display progress
                 if self.frame_count % 30 == 0:
                     print(f"CAM {self.camera_name}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
-        
+
+                time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
+
     def stop_record(self):
         self.zed.disable_recording()
 
@@ -168,8 +178,14 @@ class ZedRecorder:
         self.zed.close()
 
 if __name__ == "__main__":
-    recorder = ZedRecorder()
+    parser = argparse.ArgumentParser(description='Record from ZED camera')
+    parser.add_argument('--depth_mode', type=str, help='Depth mode', default="quality")
+    parser.add_argument('--svo', type=str, help='SVO file to record', default=None)
+    args = parser.parse_args()
+
+    recorder = ZedRecorder(depth_mode=args.depth_mode, vis=True, svo_file=args.svo)
     recorder.initialize_camera()
     svo_dir = Path('./tmp/')
     svo_dir.mkdir(exist_ok=True)
-    recorder.record_frames(str(svo_dir))
+    # recorder.record_frames(str(svo_dir))
+    recorder.replay_frames()
