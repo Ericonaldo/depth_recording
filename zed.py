@@ -66,7 +66,7 @@ class ZedRecorder:
         self.async_mode = async_mode
         self.svo_real_time = svo_real_time
 
-        self.camera_name = "Zed2i"
+        self.camera_name = "zed2i"
         self.depth_mode = depth_mode
         
         # Create output directory
@@ -75,6 +75,8 @@ class ZedRecorder:
         
         # Create timestamp-based directory
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+        if svo_file is not None:
+            self.timestamp = svo_file.split("/")[-1].replace(".svo", "").replace(".svo2", "").replace("zed_", "")
         session_dir = output_path / self.timestamp
 
         # Create camera directory
@@ -161,6 +163,9 @@ class ZedRecorder:
                     print(f"CAM {self.camera_name}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
 
                 time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
+            else:
+                self.stop_record()
+                break
 
     def stop_record(self):
         self.zed.disable_recording()
