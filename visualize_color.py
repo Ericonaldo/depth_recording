@@ -1,6 +1,7 @@
 import cv2
 import os
 import sys
+import numpy as np
 
 def visualize_image_sequences(directories_paths, fps):
     # List all PNG files in each directory, grouped by cameras
@@ -16,35 +17,44 @@ def visualize_image_sequences(directories_paths, fps):
         image_files_per_camera.append(image_files)
     
     # Create a window to display images for each camera
-    windows = [f'Camera {i+1}' for i in range(len(directories_paths))]
+    windows = [name.split("/")[-1] for name in directories_paths]
     for window in windows:
         cv2.namedWindow(window, cv2.WINDOW_NORMAL)
 
     # Move windows to different positions on the screen to avoid overlap
-    window_positions = [(0, 0), (500, 0), (1000, 0), (1500, 0), (0, 500), (500, 500), (1000, 500)]  # Adjust positions as necessary
+    window_positions = [(0, 0), (500, 0), (1000, 0), (1500, 0), \
+                        (0, 500), (500, 500), (1000, 500), (1500, 500), \
+                        (0, 1000), (500, 1000), (1000, 1000), (1500, 1000)]  # Adjust positions as necessary
     for i, window in enumerate(windows):
         if i < len(window_positions):
             cv2.moveWindow(window, *window_positions[i])
     
     # Read and display images in sequence for each camera
-    num_frames = len(image_files_per_camera[0])  # Assuming all cameras have the same number of frames
+    # Determine the maximum number of frames (longest sequence length)
+    num_frames = max(len(image_files) for image_files in image_files_per_camera)
     
+    # Read and display images in sequence for each camera
     for i in range(num_frames):
-        # Read the image for each camera
         images = []
+        # For each camera, load the corresponding image if it exists
         for idx, directory_path in enumerate(directories_paths):
-            image_file = image_files_per_camera[idx][i]
-            image_path = os.path.join(directory_path, image_file)
-            print(f"Displaying {image_path}")
-            
-            # Read the image
-            image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-            if image is None:
-                print(f"Error reading image {image_file} for camera {idx+1}. Skipping.")
-                continue
-            
-            images.append(image)
-
+            # Check if the current camera has a frame for this index
+            if i < len(image_files_per_camera[idx]):
+                image_file = image_files_per_camera[idx][i]
+                image_path = os.path.join(directory_path, image_file)
+                print(f"Displaying {image_path}")
+                
+                # Read the image
+                image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+                if image is None:
+                    print(f"Error reading image {image_file} for camera {idx+1}. Skipping.")
+                    continue
+                
+                images.append(image)
+            else:
+                # If the camera doesn't have more frames, append a black image (or leave it empty)
+                images.append(np.zeros_like(images[0]) if images else np.zeros((480, 640, 3), dtype=np.uint8))  # Modify size as necessary
+        
         # Show the image in each window
         for idx, image in enumerate(images):
             cv2.imshow(windows[idx], image)
