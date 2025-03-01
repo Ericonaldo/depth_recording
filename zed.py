@@ -162,7 +162,8 @@ class ZedRecorder:
                 if self.frame_count % 30 == 0:
                     print(f"CAM {self.camera_name}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
 
-                time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
+                if not replay:
+                    time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
             else:
                 self.stop_record()
                 break
