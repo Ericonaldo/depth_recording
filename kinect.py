@@ -113,6 +113,6 @@ class KinectRecorder:
         self.stop_record()
 
 if __name__ == "__main__":
-    recorder = KinectRecorder()
+    recorder = KinectRecorder(False)
     recorder.initialize_camera()
     recorder.record_frames()

@@ -46,7 +46,7 @@ fps_dict = {
     "d405": 30,
     "d415": 30,
     "d435": 30,
-    "d455": 5,
+    "d455": 30,
 }
 
 RECORD_FPS = 5
@@ -182,7 +182,7 @@ class RealSenseRecorder:
 
                 # Display progress
                 if self.frame_count % 30 == 0:
-                    print(f"CAM {self.serial_number}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
+                    print(f"CAM {serial_number_dict[self.serial_number]}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
 
                 time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
 
@@ -210,6 +210,6 @@ if __name__ == "__main__":
     print("Testing device: ", device)
     # exit(0)
     
-    recorder = RealSenseRecorder( device.get_info(rs.camera_info.serial_number))
+    recorder = RealSenseRecorder(device.get_info(rs.camera_info.serial_number), False)
     recorder.initialize_camera()
     recorder.record_frames()

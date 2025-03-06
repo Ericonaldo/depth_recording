@@ -67,13 +67,13 @@ def main(args):
             p = RealsenseRecordProcess(serial_number, vis=str.lower(args.vis) in serial_number_dict[serial_number])
             p.start()
             processes.append(p)
-            time.sleep(1)
+            # time.sleep(1)
 
     if args.zed:
         p = ZedRecordProcess(str.lower(args.vis) in "zed")
         p.start()
         processes.append(p)
-        time.sleep(0.8)
+        # time.sleep(0.8)
 
     if args.kn:
         p = KinectRecordProcess(str.lower(args.vis) in "kn")
@@ -90,7 +90,7 @@ def parse_args():
         parser.add_argument('--rs', action='store_true', help='Record from RealSense cameras')
         parser.add_argument('--zed', action='store_true', help='Record from ZED camera')
         parser.add_argument('--kn', action='store_true', help='Record from Azure Kinect camera')
-        parser.add_argument('--vis', type=str, help='Visualization, default using 455', default="455")
+        parser.add_argument('--vis', type=str, help='Visualization, default using 455', default="none")
         return parser.parse_args()
 
 
