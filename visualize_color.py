@@ -67,6 +67,41 @@ def visualize_image_sequences(directories_paths, fps):
     # Close all OpenCV windows
     cv2.destroyAllWindows()
 
+def save_videos(directories_paths, fps, output_prefix="output"):
+        """
+        Save image sequences as videos for each camera.
+        
+        Args:
+            directories_paths (list): List of directory paths containing image sequences
+            fps (int): Frames per second for the output video
+            output_prefix (str): Prefix for output video filenames
+        """
+        for idx, directory_path in enumerate(directories_paths):
+            image_files = [f for f in os.listdir(directory_path) if f.endswith('.png') and f.startswith('color_')]
+            image_files = sorted(image_files, key=lambda x:int(x.replace('.png','').split("_")[-1]))
+            
+            if not image_files:
+                print(f"No PNG images found in directory {directory_path}")
+                continue
+                
+            # Read first image to get dimensions
+            first_image = cv2.imread(os.path.join(directory_path, image_files[0]))
+            height, width = first_image.shape[:2]
+            
+            # Create video writer
+            output_path = f"{output_prefix}_{idx}.mp4"
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+            
+            for image_file in image_files:
+                image_path = os.path.join(directory_path, image_file)
+                frame = cv2.imread(image_path)
+                if frame is not None:
+                    out.write(frame)
+                    
+            out.release()
+            print(f"Saved video for camera {idx} to {output_path}")
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python visualize_image_sequence.py <directory_path_1> <directory_path_2> ... <fps>")
@@ -84,3 +119,4 @@ if __name__ == "__main__":
     
     # Call the function to visualize image sequences
     visualize_image_sequences(directories_paths, fps)
+    # save_videos(directories_paths, fps)

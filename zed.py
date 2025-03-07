@@ -76,7 +76,7 @@ class ZedRecorder:
         # Create timestamp-based directory
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         if svo_file is not None:
-            self.timestamp = svo_file.split("/")[-1].replace(".svo", "").replace(".svo2", "").replace("zed_", "")
+            self.timestamp = svo_file.split("/")[-1].replace(".svo2", "").replace(".svo", "").replace("zed_", "")
         session_dir = output_path / self.timestamp
 
         # Create camera directory
