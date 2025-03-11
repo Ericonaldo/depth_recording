@@ -94,7 +94,7 @@ class KinectRecorder:
                         cv2.waitKey(1)
 
                     self.frame_count += 1
-
+                    
                     # Display progress
                     if self.frame_count % 30 == 0:
                         print(f"CAM {self.camera_name}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")

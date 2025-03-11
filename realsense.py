@@ -150,7 +150,6 @@ class RealSenseRecorder:
 
         while True:
             try:
-                self.frame_count += 1
                 record_time_start = time.time()
                 # Wait for frames
                 frames = self.pipeline.wait_for_frames()
@@ -185,6 +184,8 @@ class RealSenseRecorder:
                     print(f"CAM {serial_number_dict[self.serial_number]}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
 
                 time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
+                
+                self.frame_count += 1
 
             except KeyboardInterrupt:
                 print(f"CAM {self.camera_name}: Stopping recording...")
