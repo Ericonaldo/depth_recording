@@ -11,27 +11,30 @@ import time
 from datetime import datetime
 import imageio
 
+from visualize_depth import colorize_depth_map
+
 CAM_LIST = {'192.168.23.100': 'lsr-s',
             # '192.168.23.101': 'welding', 
             # '192.168.23.102': 'None', 
 }
 
+
 def save_data(color, depth, pcd, normal, camera_dir, frame_count):
     cv2.imwrite(str(camera_dir / f"color_{frame_count}.png"), color)
     np.save(str(camera_dir / f"raw_depth_{frame_count}.npy"), depth) # 32-bit float array
 
-    depth_img = depth * 1000
-    depth_img = np.nan_to_num(depth_img, 0)
-    depth_img[depth_img > 65535] = 65535
-    depth_img[depth_img < 1e-5] = 0
+    # depth_img = depth * 1000
+    # depth_img = np.nan_to_num(depth_img, 0)
+    # depth_img[depth_img > 65535] = 65535
+    # depth_img[depth_img < 1e-5] = 0
     
     # Convert depth to uint16 and save
-    cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth.astype(np.uint16)) # 16-bit uint array
+    # cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth_img.astype(np.uint16)) # 16-bit uint array
+    cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth) # 16-bit uint array
     np.save(str(camera_dir / f"pcd_{frame_count}.npy"), pcd) # 32-bit float array
     np.save(str(camera_dir / f"normal_{frame_count}.npy"), normal) # 32-bit float array
 
 def init_mecheye(ip):
-    # config = k4a.K4A_DEVICE_CONFIG_INIT_DISABLE_ALL
     camera = Camera()
     camera.connect(ip)
 
@@ -115,7 +118,7 @@ class MecheyeRecorder:
     def initialize_camera(self):
         print(f"Initializing device: {self.camera_name}")
         self.device = init_mecheye(self.ip)
-        print("Kinect Kinect initialized successfully")
+        print(f"{self.camera_name} initialized successfully")
 
     def record_frames(self):
         start_time = time.time()
@@ -130,11 +133,14 @@ class MecheyeRecorder:
                 depth_map = frame2d_and_3d.frame_3d().get_depth_map()
                 rgb_map = frame2d_and_3d.frame_2d().get_color_image()
                 depth = depth_map.data()
+                depth = np.nan_to_num(depth, 0)
                 color = rgb_map.data()
                 depth = align_depth_to_color(self.device, depth, color)
+                # print(depth.shape, depth.min(), depth.max())
+                # depth = colorize_depth_map(depth, min_value=0, max_value=2000)
 
-                # depth = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                # depth = cv2.applyColorMap(depth, cv2.COLORMAP_JET)
+                depth = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                depth = cv2.applyColorMap(depth, cv2.COLORMAP_JET)
 
                 pcd = textured_pcd.vertices()
                 pcd_color = textured_pcd.colors()
@@ -199,7 +205,7 @@ def main(args):
 
 def parse_args():
         parser = argparse.ArgumentParser(description='Record from MechMind cameras')
-        parser.add_argument('--interval', type=int, help='Interval time', default=6)
+        parser.add_argument('--interval', type=float, help='Interval time', default=4)
         parser.add_argument('--vis', type=str, help='Visualization', default="none")
         return parser.parse_args()
 
