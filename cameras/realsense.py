@@ -51,9 +51,11 @@ fps_dict = {
 
 RECORD_FPS = 5
 
+
 def save_data(depth_image, color_image, camera_dir, frame_count):
     cv2.imwrite(str(camera_dir / f"depth_{frame_count}.png"), depth_image)
     cv2.imwrite(str(camera_dir / f"color_{frame_count}.png"), color_image)
+
 
 def get_depth_filter():
     # filter stuff
@@ -69,9 +71,25 @@ def get_depth_filter():
     temporal = rs.temporal_filter()
     hole_filling = rs.hole_filling_filter(mode=2)
 
-    return depth_to_disparity, disparity_to_depth, decimation, spatial, temporal, hole_filling
+    return (
+        depth_to_disparity,
+        disparity_to_depth,
+        decimation,
+        spatial,
+        temporal,
+        hole_filling,
+    )
 
-def depth_process(frame, depth_to_disparity=None, disparity_to_depth=None, decimation=None, spatial=None, temporal=None, hole_filling=None):
+
+def depth_process(
+    frame,
+    depth_to_disparity=None,
+    disparity_to_depth=None,
+    decimation=None,
+    spatial=None,
+    temporal=None,
+    hole_filling=None,
+):
     # if decimation is not None:
     #     frame = decimation.process(frame)
     # if depth_to_disparity is not None:
@@ -88,6 +106,7 @@ def depth_process(frame, depth_to_disparity=None, disparity_to_depth=None, decim
 
     return frame
 
+
 class RealSenseRecorder:
     def __init__(self, serial_number, vis, output_path="./recorded_data"):
         self.pipeline = None
@@ -97,11 +116,11 @@ class RealSenseRecorder:
         self.camera_name = serial_number_dict.get(serial_number, "unknown")
 
         self.vis = vis
-        
+
         # Create output directory
         output_path = Path(output_path)
         output_path.mkdir(exist_ok=True)
-        
+
         # Create timestamp-based directory
         timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         session_dir = output_path / timestamp
@@ -112,17 +131,27 @@ class RealSenseRecorder:
 
     def initialize_camera(self):
         print(f"Initializing device: {self.serial_number} {self.camera_name}")
-        
+
         # Setup pipeline and config for each camera
         self.pipeline = rs.pipeline()
         self.config = rs.config()
         # self.depth_filters = get_depth_filter()
 
         self.config.enable_device(self.serial_number)
-        
+
         # Enable streams
-        self.config.enable_stream(rs.stream.depth, *depth_resolution_dict[self.camera_name], rs.format.z16, fps_dict[self.camera_name])
-        self.config.enable_stream(rs.stream.color, *color_resolution_dict[self.camera_name], rs.format.bgr8, fps_dict[self.camera_name])
+        self.config.enable_stream(
+            rs.stream.depth,
+            *depth_resolution_dict[self.camera_name],
+            rs.format.z16,
+            fps_dict[self.camera_name],
+        )
+        self.config.enable_stream(
+            rs.stream.color,
+            *color_resolution_dict[self.camera_name],
+            rs.format.bgr8,
+            fps_dict[self.camera_name],
+        )
         # Create alignment primitive with color as its target stream
         self.align = rs.align(rs.stream.color)
         # self.align = rs.align(rs.stream.depth)
@@ -141,7 +170,7 @@ class RealSenseRecorder:
         # exp = sensor_dep.set_option(rs.option.exposure, 10000)
         # exp = sensor_dep.get_option(rs.option.exposure)
         # print("New exposure = ", exp)
-        
+
         self.frame_count = 0
 
     def record_frames(self):
@@ -166,7 +195,12 @@ class RealSenseRecorder:
                 # Create a process to save data asynchronously
                 save_process = Process(
                     target=save_data,
-                    args=(depth_image.copy(), color_image.copy(), self.camera_dir, self.frame_count)
+                    args=(
+                        depth_image.copy(),
+                        color_image.copy(),
+                        self.camera_dir,
+                        self.frame_count,
+                    ),
                 )
                 save_process.start()
 
@@ -175,16 +209,20 @@ class RealSenseRecorder:
                     cv2.waitKey(1)
 
                 # depth_frame = depth_process(depth_frame, *self.depth_filters)
-                
+
                 if not depth_frame or not color_frame:
                     raise Exception("Failed to acquire frames")
 
                 # Display progress
                 if self.frame_count % 30 == 0:
-                    print(f"CAM {serial_number_dict[self.serial_number]}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames")
+                    print(
+                        f"CAM {serial_number_dict[self.serial_number]}: Recorded... {int(time.time() - start_time)} seconds, {self.frame_count} frames"
+                    )
 
-                time.sleep(max(0, 1/RECORD_FPS - (time.time()-record_time_start))) # fps = RECORD_FPS
-                
+                time.sleep(
+                    max(0, 1 / RECORD_FPS - (time.time() - record_time_start))
+                )  # fps = RECORD_FPS
+
                 self.frame_count += 1
 
             except KeyboardInterrupt:
@@ -194,10 +232,11 @@ class RealSenseRecorder:
             except Exception as e:
                 print(f"CAM {self.camera_name}: Error - {e}")
                 break
-        
+
     def stop_recording(self):
         self.pipeline.stop()
         self.frame_count = 0
+
 
 if __name__ == "__main__":
     ctx = rs.context()
@@ -210,7 +249,7 @@ if __name__ == "__main__":
     device = devices[0]
     print("Testing device: ", device)
     # exit(0)
-    
+
     recorder = RealSenseRecorder(device.get_info(rs.camera_info.serial_number), False)
     recorder.initialize_camera()
     recorder.record_frames()

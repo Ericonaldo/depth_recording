@@ -4,19 +4,20 @@ import argparse
 import time
 
 try:
-    from realsense import RealSenseRecorder, serial_number_dict
+    from cameras.realsense import RealSenseRecorder, serial_number_dict
 except ImportError:
     pass
 
 try:
-    from zed import ZedRecorder
+    from cameras.zed import ZedRecorder
 except ImportError:
     pass
 
 try:
-    from kinect import KinectRecorder
+    from cameras.kinect import KinectRecorder
 except ImportError:
     pass
+
 
 class KinectRecordProcess(Process):
     def __init__(self, vis=False):
@@ -27,6 +28,7 @@ class KinectRecordProcess(Process):
         recorder = KinectRecorder(self.vis)
         recorder.initialize_camera()
         recorder.record_frames()
+
 
 class RealsenseRecordProcess(Process):
     def __init__(self, device, vis=False):
@@ -39,6 +41,7 @@ class RealsenseRecordProcess(Process):
         recorder.initialize_camera()
         recorder.record_frames()
 
+
 class ZedRecordProcess(Process):
     def __init__(self, vis=False):
         super(ZedRecordProcess, self).__init__()
@@ -47,9 +50,10 @@ class ZedRecordProcess(Process):
     def run(self):
         recorder = ZedRecorder(self.vis)
         recorder.initialize_camera()
-        svo_dir = Path('./tmp/')
+        svo_dir = Path("./tmp/")
         svo_dir.mkdir(exist_ok=True)
         recorder.record_frames(str(svo_dir))
+
 
 def main(args):
     processes = []
@@ -61,10 +65,13 @@ def main(args):
         ctx = rs.context()
         devices = ctx.query_devices()
         print(f"Found {len(devices)} RealSense devices")
-        
+
         for device in devices:
             serial_number = device.get_info(rs.camera_info.serial_number)
-            p = RealsenseRecordProcess(serial_number, vis=str.lower(args.vis) in serial_number_dict[serial_number])
+            p = RealsenseRecordProcess(
+                serial_number,
+                vis=str.lower(args.vis) in serial_number_dict[serial_number],
+            )
             p.start()
             processes.append(p)
             # time.sleep(1)
@@ -79,19 +86,27 @@ def main(args):
         p = KinectRecordProcess(str.lower(args.vis) in "kn")
         p.start()
         processes.append(p)
-    
+
     # Wait for all processes to complete
     for p in processes:
         p.join()
 
 
 def parse_args():
-        parser = argparse.ArgumentParser(description='Record from RealSense and ZED cameras')
-        parser.add_argument('--rs', action='store_true', help='Record from RealSense cameras')
-        parser.add_argument('--zed', action='store_true', help='Record from ZED camera')
-        parser.add_argument('--kn', action='store_true', help='Record from Azure Kinect camera')
-        parser.add_argument('--vis', type=str, help='Visualization, default using 455', default="none")
-        return parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="Record from RealSense and ZED cameras"
+    )
+    parser.add_argument(
+        "--rs", action="store_true", help="Record from RealSense cameras"
+    )
+    parser.add_argument("--zed", action="store_true", help="Record from ZED camera")
+    parser.add_argument(
+        "--kn", action="store_true", help="Record from Azure Kinect camera"
+    )
+    parser.add_argument(
+        "--vis", type=str, help="Visualization, default using 455", default="none"
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
