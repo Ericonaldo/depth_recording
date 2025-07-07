@@ -4,17 +4,17 @@ import argparse
 import time
 
 try:
-    from realsense import RealSenseRecorder, serial_number_dict
+    from cameras.realsense import RealSenseRecorder, serial_number_dict
 except ImportError:
     pass
 
 try:
-    from zed import ZedRecorder
+    from cameras.zed import ZedRecorder
 except ImportError:
     pass
 
 try:
-    from kinect import KinectRecorder
+    from cameras.kinect import KinectRecorder
 except ImportError:
     pass
 

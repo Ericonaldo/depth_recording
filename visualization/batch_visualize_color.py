@@ -17,8 +17,8 @@ def main():
     # FPS value
     fps = int(sys.argv[2])
 
-    # Create the command to run visualize_depth.py with the constructed arguments
-    command = ['python', 'visualize_color.py'] + camera_directories + [str(fps)]
+    # Create the command to run visualize_color.py with the constructed arguments
+    command = ['python', 'visualization/visualize_color.py'] + camera_directories + [str(fps)]
 
     # Run the command
     try:

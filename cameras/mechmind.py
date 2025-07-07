@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 import imageio
 
-from visualize_depth import colorize_depth_map
+from visualization.visualize_depth import colorize_depth_map
 
 CAM_LIST = {'192.168.23.100': 'lsr-s',
             # '192.168.23.101': 'welding', 
